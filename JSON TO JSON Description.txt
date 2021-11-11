@@ -1,0 +1,46 @@
+1)Set the connection attributes like hostname and portnumber in the JoltSessionAttribute object.
+
+Refer to this line in the following code listing:
+
+sattr = new JoltSessionAttributes();
+
+The sattr.checkAuthenticationLevel() allows the application to determine the level of security required to log on to the server.
+Refer to this line in the following code listing:
+
+switch (sattr.checkAuthenticationLevel())
+The logon is accomplished by instantiating a JoltSession object.
+Refer to these lines in the following code listing:
+
+session = new JoltSession (sattr, userName, userRole, 
+userPassword, appPassword);
+This example does not explicitly catch SessionException errors.
+
+All JoltRemoteService calls require a service to be specified and the session key returned from JoltSession().
+Refer to these lines in the following code listing:
+
+withdrawal = new JoltRemoteService(“WITHDRAWAL”, session);
+deposit = new JoltRemoteService(“DEPOSIT”, session);
+These calls bind the service definition of both the WITHDRAWAL and DEPOSIT services, which are stored in the Jolt Repository, to the withdrawal and deposit objects, respectively. The services WITHDRAWAL and DEPOSIT must be defined in the Jolt Repository; otherwise a ServiceException is thrown. This example does not explicitly catch ServiceException errors.
+
+Once the service definitions are returned, the application-specific fields such as account number ACCOUNT_ID and withdrawal amount SAMOUNT are automatically populated.
+Refer to these lines in the following code listing:
+
+withdrawal.addInt(“ACCOUNT_ID”, 100000);
+withdrawal.addString(“SAMOUNT”, “100.00”);
+The add*() methods can throw IllegalAccessError or NoSuchFieldError exceptions.
+
+The JoltTransaction call allows a timeout to be specified if the transaction does not complete within the specified time.
+Refer to this line in the following code listing:
+
+trans = new JoltTransaction(5,session);
+Once the withdrawal service definition is automatically populated, the withdrawal service is invoked by calling the withdrawal.call(trans) method.
+Refer to this line in the following code listing:
+
+withdrawal.call(trans);
+A failed WITHDRAWAL can be rolled back.
+Refer to this line in the following code listing:
+
+trans.rollback();
+Otherwise, once the DEPOSIT is performed, all the transactions are committed. Refer to these lines in the following code listing:
+deposit.call(trans);
+trans.commit();

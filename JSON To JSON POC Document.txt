@@ -1,0 +1,153 @@
+Program one
+========================
+public class JsonToJson {
+	public static void main (String[] args)
+    {
+        JoltSession session;
+        JoltSessionAttributes sattr;
+        JoltRemoteService withdrawal;
+        JoltRemoteService deposit;
+        JoltTransaction trans;
+        String userName=null;
+        String userPassword=null;
+        String appPassword=null;
+        String userRole=”myapp”;
+        sattr = new JoltSessionAttributes(); 					
+        sattr.setString(sattr.APPADDRESS);
+        switch (sattr.checkAuthenticationLevel())		 
+        {
+        case JoltSessionAttributes.NOAUTH:
+            System.out.println(“NOAUTH\n”);
+            break;
+        case JoltSessionAttributes.APPASSWORD:
+            appPassword = “appPassword”;
+            break;
+        case JoltSessionAttributes.USRPASSWORD:
+             userName = “myname” ; 
+            userPassword = “mysecret”;
+            appPassword = “appPassword”;
+            break;
+        }
+        sattr.setInt(sattr.IDLETIMEOUT, 300);
+        session = new JoltSession(sattr, userName, userRole,
+        userPassword, appPassword);
+        // Simulate a transfer
+        withdrawal = new JoltRemoteService(“WITHDRAWAL”, session);
+        deposit = new JoltRemoteService(“DEPOSIT”, session);
+        withdrawal.addInt(“ACCOUNT_ID”, 100000);
+        withdrawal.addString(“SAMOUNT”, “100.00”);
+        // Begin the transaction w/ a 5 sec timeout
+        trans = new JoltTransaction(5, session);
+        try
+        {
+            withdrawal.call(trans);
+        }
+        catch (ApplicationException e)
+        {
+            e.printStackTrace();
+            // This service uses the STATLIN field to report errors
+            // back to the client application.
+            System.err.println(withdrawal.getStringDef(“STATLIN”,”NO 
+            STATLIN”));
+            System.exit(1);
+        }
+        String wbal = withdrawal.getStringDef(“SBALANCE”,“$-1.0”);
+        // remove leading “$” before converting string to float
+        float w = Float.valueOf(wbal.substring(1)).floatValue();
+        if (w < 0.0)
+        {
+            System.err.println(“Insufficient funds”);
+            trans.rollback();
+            System.exit(1);
+        }
+        else            // now attempt to deposit/transfer the funds
+        {
+            deposit.addInt(“ACCOUNT_ID”, 100001);
+            deposit.addString(“SAMOUNT”, “100.00”);
+            deposit.call(trans);
+            String dbal = deposit.getStringDef(“SBALANCE”, “-1.0”);
+            trans.commit();
+            System.out.println(“Successful withdrawal”);
+            System.out.println(“New balance is: “ + wbal);
+            System.out.println(“Successful deposit”);
+            System.out.println(“New balance is: “ + dbal);
+        }
+        session.endSession();
+        System.exit(0);
+        } // end main
+
+}
+
+Program Two
+========================
+
+public class ToUpper {
+	public static void main (String[] args)
+    {
+        JoltSession            session;
+        JoltSessionAttributes  sattr;
+        JoltRemoteService      toupper;
+        JoltTransaction        trans;
+        String userName=null;
+        String userPassword=null;
+        String appPassword=null;
+        String userRole="myapp";
+        String outstr;
+        sattr = new JoltSessionAttributes();
+        sattr.setString(sattr.APPADDRESS, “//myhost:8501”);
+        switch (sattr.checkAuthenticationLevel())
+        {
+        case JoltSessionAttributes.NOAUTH:
+            break;
+        case JoltSessionAttributes.APPASSWORD:
+            appPassword = “appPassword”;
+            break;
+        case JoltSessionAttributes.USRPASSWORD:
+            userName = “myname”; 
+            userPassword = “mysecret”;
+            appPassword = “appPassword”;
+            break;
+        }
+        sattr.setInt(sattr.IDLETIMEOUT, 300);
+        session = new JoltSession(sattr, userName, userRole, 
+        userPassword, appPassword);
+        toupper = new JoltRemoteService (“TOUPPER”, session);
+        toupper.setString(“STRING”, “hello world”);
+        toupper.call(null);
+        outstr = toupper.getStringDef(“STRING”, null);
+        if (outstr != null)
+            System.out.println(outstr);
+        session.endSession();
+                  System.exit(0);
+    } // end main
+}
+
+Program Three
+========================
+
+public class Simpview {
+	public void simpview ()
+	{
+		JoltRemoteService ViewSvc;
+		String outString;
+		int outInt;
+		float outFloat;
+		// Create a Jolt Service for the BEA Tuxedo service "SIMPVIEW"
+		ViewSvc = new JoltRemoteService("SIMPVIEW",session); 
+		// Set the input parameters required for SIMPVIEW
+		ViewSvc.setString("inString", "John");
+		ViewSvc.setInt("inInt", 10);
+		ViewSvc.setFloat("inFloat", (float)10.0);
+		// Call the service. No transaction required, so pass
+		// a "null" parameter
+		ViewSvc.call(null);
+		// Process the results
+		outString = ViewSvc.getStringDef("outString", null);
+		outInt = ViewSvc.getIntDef("outInt", -1);
+		outFloat = ViewSvc.getFloatDef("outFloat", (float)-1.0);
+		// And display them...
+		System.out.print("outString=" + outString + ",");
+		System.out.print("outInt=" + outInt + ",");
+		System.out.println("outFloat=" + outFloat);
+	}
+}
